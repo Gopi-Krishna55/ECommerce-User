@@ -1,0 +1,1 @@
+ECommerce-User is a Spring Boot microservice managing user accounts for an e-commerce platform. It handles user registration, authentication via JWT, profile management, and CRUD operations while integrating with Spring Security, password encryption, and CORS-enabled APIs for secure frontend communication.
