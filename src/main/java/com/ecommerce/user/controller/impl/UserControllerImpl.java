@@ -2,6 +2,7 @@ package com.ecommerce.user.controller.impl;
 
 import com.ecommerce.user.controller.UserController;
 import com.ecommerce.user.model.LoginModel;
+import com.ecommerce.user.model.OtpVerificationModel;
 import com.ecommerce.user.model.UserModel;
 import com.ecommerce.user.service.UserService;
 import com.ecommerce.user.util.TokenGenerationUtil;
@@ -54,5 +55,15 @@ public class UserControllerImpl implements UserController {
     @Override
     public ResponseEntity<?> deleteUser(String authorization, Long userId) {
         return userService.deleteUser(userId);
+    }
+
+    @Override
+    public ResponseEntity<?> createOtp(String email) {
+        return userService.createOtp(email);
+    }
+
+    @Override
+    public ResponseEntity<?> verifyOtp(OtpVerificationModel otpVerificationModel) {
+        return userService.verifyOtp(otpVerificationModel);
     }
 }

@@ -1,6 +1,7 @@
 package com.ecommerce.user.controller;
 
 import com.ecommerce.user.model.LoginModel;
+import com.ecommerce.user.model.OtpVerificationModel;
 import com.ecommerce.user.model.UserModel;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -121,4 +122,10 @@ public interface UserController {
             @Parameter(description = "User ID", required = true)
             Long userId
     );
+
+    @PostMapping("/createOtp")
+    ResponseEntity<?> createOtp(@RequestParam String email);
+
+    @GetMapping("/verifyOtp")
+    ResponseEntity<?> verifyOtp(@RequestBody OtpVerificationModel otpVerificationModel);
 }

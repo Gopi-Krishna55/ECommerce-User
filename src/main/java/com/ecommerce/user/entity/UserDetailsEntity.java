@@ -30,7 +30,7 @@ public class UserDetailsEntity {
     @Column(name = "last_name", length = 50)
     private String lastName;
 
-    @Column(name = "mobile_number", length = 15)
+    @Column(name = "mobile_number", length = 15,unique = true)
     private String mobileNumber;
 
     @Column(name = "is_active")

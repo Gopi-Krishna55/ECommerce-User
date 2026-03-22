@@ -1,9 +1,12 @@
 package com.ecommerce.user.service.Impl;
 
 import com.ecommerce.user.config.PasswordEncryption;
+import com.ecommerce.user.entity.OtpDetailsEntity;
 import com.ecommerce.user.entity.UserDetailsEntity;
 import com.ecommerce.user.model.LoginModel;
+import com.ecommerce.user.model.OtpVerificationModel;
 import com.ecommerce.user.model.UserModel;
+import com.ecommerce.user.repository.OtpRepository;
 import com.ecommerce.user.repository.UserRepository;
 import com.ecommerce.user.service.UserService;
 import com.ecommerce.user.util.TokenGenerationUtil;
@@ -15,9 +18,13 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 
+import java.security.SecureRandom;
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Random;
 
 @Service
 public class UserServiceImpl implements UserService {
@@ -27,19 +34,26 @@ public class UserServiceImpl implements UserService {
     private final TokenGenerationUtil tokenGenerationUtil;
     private final AuthenticationManager authenticationManager;
     private final ModelMapper modelMapper;
+    private final EmailService emailService;
+    private static final SecureRandom secureRandom = new SecureRandom();
+    private final OtpRepository otpRepository;
+    private final OtpProducer otpProducer;
 
     public UserServiceImpl(
             UserRepository userRepository,
             PasswordEncryption passwordEncryption,
             TokenGenerationUtil tokenGenerationUtil,
             AuthenticationManager authenticationManager,
-            ModelMapper modelMapper
+            ModelMapper modelMapper, EmailService emailService, OtpRepository otpRepository, OtpProducer otpProducer
     ) {
         this.userRepository = userRepository;
         this.passwordEncryption = passwordEncryption;
         this.tokenGenerationUtil = tokenGenerationUtil;
         this.authenticationManager = authenticationManager;
         this.modelMapper = modelMapper;
+        this.emailService = emailService;
+        this.otpRepository = otpRepository;
+        this.otpProducer = otpProducer;
     }
 
     @Override
@@ -167,4 +181,66 @@ public class UserServiceImpl implements UserService {
 
         return ResponseEntity.ok(Map.of("token", token));
     }
+
+    @Override
+    public ResponseEntity<?> createOtp(String email) {
+
+        if (email == null || email.isEmpty() || !email.endsWith("@gmail.com")) {
+            return ResponseEntity.badRequest()
+                    .body("email is mandatory with @gmail.com");
+        }
+
+        try {
+            int otpNumber = secureRandom.nextInt(100000, 999999);
+            String otp = String.valueOf(otpNumber);
+
+            OtpDetailsEntity otpDetailsEntity = new OtpDetailsEntity();
+            otpDetailsEntity.setEmail(email);
+            otpDetailsEntity.setOtp(otp);
+            otpDetailsEntity.setExpiryDate(LocalDateTime.now().plusMinutes(5));
+            otpRepository.save(otpDetailsEntity);
+            otpProducer.sendOtp(email, otp);
+
+            return ResponseEntity.ok("OTP generated and sent successfully");
+
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body("Error generating OTP");
+        }
+    }
+
+    @Override
+    public ResponseEntity<?> verifyOtp(OtpVerificationModel otpVerificationModel) {
+
+        OtpDetailsEntity otpDetailsEntity = otpRepository.findByEmail(otpVerificationModel.getEmail());
+
+        if (otpDetailsEntity == null) {
+            return ResponseEntity.badRequest().body("OTP not found for this mobile number");
+        }
+
+        // Check expiry
+        if (otpDetailsEntity.getExpiryDate().isBefore(LocalDateTime.now())) {
+            return ResponseEntity.badRequest().body("OTP expired");
+        }
+
+        // Validate OTP
+        if (!otpDetailsEntity.getOtp().equals(otpVerificationModel.getOtp())) {
+            return ResponseEntity.badRequest().body("Incorrect OTP provided");
+        }
+
+        Optional<UserDetailsEntity> userDetails = userRepository.findByEmail(otpVerificationModel.getEmail());
+
+        if (userDetails.isEmpty()) {
+            return ResponseEntity.badRequest().body("User not found");
+        }
+
+        // Generate token
+        String token = tokenGenerationUtil.generateToken(userDetails.get().getUserName());
+
+        // deleting OTP after successful verification
+        otpRepository.delete(otpDetailsEntity);
+
+        return ResponseEntity.ok(token);
+    }
+
+
 }
