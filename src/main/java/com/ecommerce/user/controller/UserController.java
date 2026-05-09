@@ -31,9 +31,7 @@ public interface UserController {
     @PostMapping("/register")
     ResponseEntity<?> addUser(
             @RequestBody @Schema(description = "User details") UserModel userModel,
-            @RequestHeader(HttpHeaders.AUTHORIZATION)
-            @Parameter(description = "Bearer token", required = true)
-            String authorization
+            @RequestHeader(value = HttpHeaders.AUTHORIZATION,required = true) String authorization
     );
 
 

@@ -37,7 +37,7 @@ public class SecurityConfig {
                 )
                 // Authorization rules
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("**/login", "**/register","/users/createOtp","/users/verifyOtp","/users/verifyOtp").permitAll()
+                        .requestMatchers("/users/createOtp","/users/verifyOtp","/users/verifyOtp").permitAll()
                         // Skip preflight OPTIONS requests
                         .requestMatchers(request -> "OPTIONS".equals(request.getMethod())).permitAll()
                         .anyRequest().authenticated()
